@@ -575,7 +575,7 @@ with Emacs text properties."
   "Return a command string that we can execute in a shell
 to obtain ripgrep results."
   (format
-   "%s --color=ansi --line-number --no-heading --with-filename %s %s %s %s -- %s ."
+   "%s --follow --color=ansi --line-number --no-heading --with-filename %s %s %s %s -- %s . 2>/dev/null"
    deadgrep-executable
    (cond
     ((eq search-type 'string)
@@ -1033,7 +1033,11 @@ in the current buffer."
       ;; useful with `deadgrep-visit-result-other-window'.
       (setq overlay-arrow-position (copy-marker pos))
 
-      (funcall open-fn file-name)
+      ;; Follow symlink
+      (let ((find-file-visit-truename t))
+        (funcall open-fn file-name)
+        )
+
       (goto-char (point-min))
 
       (when line-number
