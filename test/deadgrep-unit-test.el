@@ -32,40 +32,94 @@
 (ert-deftest deadgrep-smoke-test ()
   (deadgrep "foo"))
 
+(defmacro with-temp-deadgrep-buf (&rest body)
+  "Execute BODY in the context of a deadgrep results buffer with
+some results."
+  `(with-temp-buffer
+     (deadgrep-mode)
+     (setq deadgrep--search-term ";; version")
+     (deadgrep--write-heading)
+     (deadgrep--insert-output
+      "[0m[35m./deadgrep.el[0m:[0m[32m8[0m:[0m[1m[31m;; Version[0m: 0.8"
+      t)
+     (goto-char (point-min))
+     ,@body))
+
 (ert-deftest deadgrep-forward ()
-  (deadgrep "foo")
+  (with-temp-deadgrep-buf
+   ;; Smoke test.
+   (deadgrep-forward)
 
-  ;; Smoke test.
-  (deadgrep-forward)
+   ;; Moving forward, when point is already on the last item, should
+   ;; not error.
+   (goto-char (point-max))
+   (deadgrep-forward)
 
-  ;; Moving forward, when point is already on the last item, should
-  ;; not error.
-  (goto-char (point-max))
-  (deadgrep-forward)
+   ;; We should end up with point on an item.
+   (goto-char (point-min))
+   (deadgrep-forward)
+   (should
+    (deadgrep--item-p (point)))))
 
-  ;; We should end up with point on an item.
-  (goto-char (point-min))
-  (deadgrep-forward)
-  (should
-   (deadgrep--item-p (point))))
+(ert-deftest deadgrep-forward-filename ()
+  (with-temp-deadgrep-buf
+   ;; Smoke test.
+   (deadgrep-forward-filename)
+
+   ;; Moving forward, when point is already on the last item should signal.
+   (goto-char (point-max))
+   (should-error
+    (deadgrep-forward-filename)
+    :type 'end-of-buffer)
+
+   ;; We should end up with point on an item.
+   (goto-char (point-min))
+   (deadgrep-forward-filename)
+
+   (should
+    (deadgrep--filename-p (point)))))
 
 (ert-deftest deadgrep-backward ()
-  (deadgrep "foo")
+  (with-temp-deadgrep-buf
+   ;; Smoke test.
+   (goto-char (point-max))
+   (deadgrep-backward)
 
-  ;; Smoke test.
-  (goto-char (point-max))
-  (deadgrep-backward)
+   ;; Moving backward, when point is already on the first item, should
+   ;; not error.
+   (goto-char (point-min))
+   (deadgrep-backward)
 
-  ;; Moving backward, when point is already on the first item, should
-  ;; not error.
-  (goto-char (point-min))
-  (deadgrep-backward)
+   ;; We should end up with point on an item.
+   (goto-char (point-max))
+   (deadgrep-backward)
+   (should
+    (deadgrep--item-p (point)))))
 
-  ;; We should end up with point on an item.
-  (goto-char (point-max))
-  (deadgrep-backward)
-  (should
-   (deadgrep--item-p (point))))
+(ert-deftest deadgrep-backward-filename ()
+  (with-temp-deadgrep-buf
+   ;; Smoke test.
+   (goto-char (point-max))
+   (deadgrep-backward-filename)
+
+   ;; Moving backward, when point is already on the first item should signal.
+   (goto-char (point-min))
+   (should-error
+    (deadgrep-backward-filename)
+    :type 'beginning-of-buffer)
+
+   ;; We should end up with point on an item.
+   (goto-char (point-max))
+   (deadgrep-backward-filename)
+   (should
+    (deadgrep--filename-p (point)))))
+
+(ert-deftest deadgrep-forward-match ()
+  (with-temp-deadgrep-buf
+   (deadgrep-forward-match)
+   (should
+    (eq (get-text-property (point) 'face)
+        'deadgrep-match-face))))
 
 (ert-deftest deadgrep--split-line ()
   (-let* ((raw-line
@@ -147,6 +201,13 @@ context arguments to ripgrep."
      (equal
       (buffer-substring-no-properties (point-min) (point-max))
       "deadgrep.el\n379  foobar\n"))))
+
+(ert-deftest deadgrep--insert-output--warning ()
+  "Ensure warnings with colour codes don't crash deadgrep."
+  (with-temp-buffer
+    (deadgrep--insert-output
+     "\033[0m\033[35m./user-lisp/isearch-customisations.el\033[0m:\033[0m\033[32m59\033[0m:(global-set-key (kbd \"<f12>\") #'\033[0m\033[1m\033[31mswiper\033[0m)\n\033[0m\033[35m./user-lisp/isearch-customisations.el\033[0m:\033[0m\033[32m60\033[0m:(global-set-key (kbd \"C-c <f12>\") #'\033[0m\033[1m\033[31mswiper\033[0m-all)\n\033[0m\033[35m./user-lisp/isearch-customisations.el\033[0m:\033[0m\033[32m64\033[0m:(global-set-key (kbd \"C-s\") #'\033[0m\033[1m\033[31mswiper\033[0m)\n\033[0m\033[35m./user-lisp/isearch-customisations.el\033[0m:\033[0m\033[32m67\033[0m:;; matches with ivy (used by \033[0m\033[1m\033[31mswiper\033[0m). Anzu style.\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy-pkg.el\033[0m:\033[0m\033[32m9\033[0m:  :url \"https://github.com/abo-abo/\033[0m\033[1m\033[31mswiper\033[0m\")\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m215\033[0m:split into three packages: ‘ivy’, ‘\033[0m\033[1m\033[31mswiper\033[0m’ and ‘counsel’; you can simply\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m244\033[0m:     First clone the \033[0m\033[1m\033[31mSwiper\033[0m repository with:\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m246\033[0m:          cd ~/git && git clone https://github.com/abo-abo/\033[0m\033[1m\033[31mswiper\033[0m\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m247\033[0m:          cd \033[0m\033[1m\033[31mswiper\033[0m && make compile\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m251\033[0m:          (add-to-list 'load-path \"~/git/\033[0m\033[1m\033[31mswiper\033[0m/\")\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m317\033[0m:          (global-set-key (kbd \"C-s\") '\033[0m\033[1m\033[31mswiper\033[0m)\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m353\033[0m:   ‘\033[0m\033[1m\033[31mswiper\033[0m’ or ‘counsel-M-x’ add more key bindings through the ‘keymap’\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m1100\033[0m:      '\033[0m\033[1m\033[31mswiper\033[0m\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m1460\033[0m:     ‘post-command-hook’.  See ‘\033[0m\033[1m\033[31mswiper\033[0m’ for an example usage.\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m:\033[0m\033[32m1479\033[0m:     interrupted with ‘C-g’.  See ‘\033[0m\033[1m\033[31mswiper\033[0m’ for an example usage.\nWARNING: stopped searching binary file \033[0m\033[35m./elpa/ivy-20190809.1551/ivy.info\033[0m after match (found \"\\u{0}\" byte around offset 56544)\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m6\033[0m:;; URL: https://github.com/abo-abo/\033[0m\033[1m\033[31mswiper\033[0m\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m202\033[0m:a behavior similar to `\033[0m\033[1m\033[31mswiper\033[0m'.\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m252\033[0m:`https://github.com/abo-abo/\033[0m\033[1m\033[31mswiper\033[0m/wiki/ivy-display-function'.\")\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m1186\033[0m:                '(\033[0m\033[1m\033[31mswiper\033[0m \033[0m\033[1m\033[31mswiper\033[0m-isearch \033[0m\033[1m\033[31mswiper\033[0m-backward \033[0m\033[1m\033[31mswiper\033[0m-isearch-backward))\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m1503\033[0m:                   (eq (ivy-state-caller ivy-last) '\033[0m\033[1m\033[31mswiper\033[0m)\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m1821\033[0m:  '((\033[0m\033[1m\033[31mswiper\033[0m . ivy-recompute-index-\033[0m\033[1m\033[31mswiper\033[0m)\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m1822\033[0m:    (\033[0m\033[1m\033[31mswiper\033[0m-multi . ivy-recompute-index-\033[0m\033[1m\033[31mswiper\033[0m)\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m1823\033[0m:    (counsel-git-grep . ivy-recompute-index-\033[0m\033[1m\033[31mswiper\033[0m)\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m1824\033[0m:    (counsel-grep . ivy-recompute-index-\033[0m\033[1m\033[31mswiper\033[0m-async)\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m3280\033[0m:                  '(ivy-recompute-index-\033[0m\033[1m\033[31mswiper\033[0m\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m3281\033[0m:                    ivy-recompute-index-\033[0m\033[1m\033[31mswiper\033[0m-async\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m3282\033[0m:                    ivy-recompute-index-\033[0m\033[1m\033[31mswiper\033[0m-async-backward\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m3283\033[0m:                    ivy-recompute-index-\033[0m\033[1m\033[31mswiper\033[0m-backward))\n\033[0m\033[35m./elpa/ivy-20190809.1551/ivy.el\033[0m:\033[0m\033[32m3461\033[0m:               (not (eq caller '\033[0m\033[1m\033[31mswiper\033[0m"
+     t)))
 
 (ert-deftest deadgrep-debug ()
   "Smoke test."
@@ -326,3 +387,61 @@ edit mode."
       (deadgrep-edit-mode)
       (should
        (equal deadgrep--search-term "foo")))))
+
+(ert-deftest deadgrep--read-search-term ()
+  "When region is active, return the region."
+  (with-temp-buffer
+    (insert "foo")
+    (transient-mark-mode t)
+    (set-mark (point-min))
+    (should
+     (string=
+      (deadgrep--read-search-term)
+      "foo"))))
+
+(ert-deftest deadgrep--matches-glob-p ()
+  ;; Match normal globs.
+  (should
+   (deadgrep--matches-globs-p "foo.bar" '("*.bar")))
+  (should
+   (deadgrep--matches-globs-p "foo.bar" '("*.quux" "*.bar")))
+  ;; Return nil if no match.
+  (should
+   (not
+    (deadgrep--matches-globs-p "foo.bar" '("*.stuff"))))
+  ;; Don't confuse glob . (literal) with regexp . (matches any char)
+  (should
+   (not
+    (deadgrep--matches-globs-p "foo.py" '("*.y")))))
+
+(ert-deftest deadgrep-kill-all-buffers--kills-buffers ()
+  (deadgrep--buffer "foo" "/" "blah.el")
+  (deadgrep--buffer "bar" "/" "blah.el")
+  (call-interactively #'deadgrep-kill-all-buffers)
+  (should (not (deadgrep--buffers))))
+
+(ert-deftest deadgrep--arguments ()
+  (should
+   (equal (deadgrep--arguments "foo" 'regexp 'smart nil)
+          '("--color=ansi" "--line-number" "--no-heading" "--with-filename" "--smart-case" "--" "foo" ".")))
+
+  (let ((deadgrep--file-type '(type . "elisp")))
+    (should
+     (equal (deadgrep--arguments "foo" 'string 'sensitive '(1 . 0))
+            '("--color=ansi" "--line-number" "--no-heading" "--with-filename" "--fixed-strings" "--case-sensitive" "--type=elisp" "--before-context=1" "--after-context=0" "--" "foo" "."))))
+
+  (let ((deadgrep--file-type '(glob . "*.el")))
+    (should
+     (equal (deadgrep--arguments "foo" 'words 'ignore '(3 . 2))
+            '("--color=ansi" "--line-number" "--no-heading" "--with-filename" "--fixed-strings" "--word-regexp" "--ignore-case" "--type-add=custom:*.el" "--type=custom" "--before-context=3" "--after-context=2" "--" "foo" ".")))))
+
+(ert-deftest deadgrep--arguments-error-cases ()
+  (should-error
+   (deadgrep--arguments "foo" 'foo 'smart nil))
+
+  (should-error
+   (deadgrep--arguments "foo" 'string 'bar '(1 . 0)))
+
+  (let ((deadgrep--file-type '(baz)))
+    (should-error
+     (deadgrep--arguments "foo" 'words 'ignore '(3 . 2)))))

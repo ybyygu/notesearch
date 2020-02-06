@@ -42,18 +42,26 @@ or copy it into your `~/.emacs.d`.
 
 ### Keybindings
 
-| Key                           | Action                                         |
-| ---                           | ---                                            |
-| <kbd>RET</kbd>                | Visit the result, file or push button at point |
-| <kbd>o</kbd>                  | Visit the result in another window             |
-| <kbd>n</kbd> and <kbd>p</kbd> | Move between results or buttons                |
-| <kbd>g</kbd>                  | Re-run the search                              |
-| <kbd>TAB</kbd>                | Expand/collapse results for a file             |
-| <kbd>C-c</kbd> <kbd>C-k</kbd> | Stop a running search                          |
-| <kbd>C-u</kbd>                | A prefix argument prevents searches from starting automatically. |
+| Key                               | Action                                                           |
+| ---                               | ---                                                              |
+| <kbd>RET</kbd>                    | Visit the result, file or push button at point                   |
+| <kbd>o</kbd>                      | Visit the result in another window                               |
+| <kbd>n</kbd> and <kbd>p</kbd>     | Move between results or buttons                                  |
+| <kbd>N</kbd> and <kbd>P</kbd>     | Move between search hits                                         |
+| <kbd>M-n</kbd> and <kbd>M-p</kbd> | Move between file headers                                        |
+| <kbd>g</kbd>                      | Re-run the search                                                |
+| <kbd>TAB</kbd>                    | Expand/collapse results for a file                               |
+| <kbd>C-c</kbd> <kbd>C-k</kbd>     | Stop a running search                                            |
+| <kbd>C-u</kbd>                    | A prefix argument prevents searches from starting automatically. |
 
 You can also use `M-x imenu` to move between files in a results
 buffer.
+
+### Additional interactive commands
+
+| Name                        | Action                          |
+| ---                         | ---                             |
+| `deadgrep-kill-all-buffers` | Kill all open deadgrep buffers. |
 
 ### Minibuffer
 
@@ -77,7 +85,7 @@ Deadgrep works hard to minimise your keystrokes.
 
 **Search term**: If the region is active, deadgrep uses that.
 
-**Search directory**: If your current file is in a git project,
+**Search directory**: If your current file is in a VCS repository,
 deadgrep uses that for your search directory.
 
 **Regexp and case sensitivity options**: Deadgrep re-uses whatever

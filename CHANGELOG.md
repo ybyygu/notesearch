@@ -1,3 +1,44 @@
+# UNRELEASED
+
+Added command `deadgrep-kill-all-buffers` which kills all open deadgrep
+buffers.
+
+UI improvements when search term is very long.
+
+Fixed issues on Windows hosts (see
+[#64](https://github.com/Wilfred/deadgrep/pull/64)).
+
+# v0.9
+
+Results buffers are now opened with `switch-to-buffer-other-window`.
+
+This enables deadgrep to work with the popwin package, and ensures that deadgrep
+respects the value of `pop-up-frames`.
+
+Fixed an issue with the file type suggestion not offering the correct
+type for the initial file.
+
+Fixed a crash when rg emitted an error when searching binary files.
+
+# v0.8
+
+The default value for `deagrep-exectable` is now `"rg"`, rather than
+explicitly searching for the binary when the library is loaded. This
+is hopefully less surprising. `deadgrep-executable` is also now
+exposed to Customize.
+
+Added commands `deadgrep-forward-match` and `deadgrep-backward-match`
+(bound to `N` and `P`) which move to the beginning of the matched
+text, not just the match line. This is particularly useful when using
+deadgrep with keyboard macros.
+
+Unlike `deadgrep-forward` and `deadgrep-backward`, these commands
+ignore buttons and file headers.
+
+Added commands `deadgrep-forward-filename` and
+`deadgrep-backward-filename` (bound to `M-n` and `M-p`) to move point
+between file headers.
+
 # v0.7
 
 **Experimental**: It's now possible to edit results buffers! Try
@@ -13,6 +54,9 @@ the root directory for a specific project without writing a whole custom
 function for `deadgrep-project-root-function`.
 
 Search results in narrowed buffers are now handled correctly.
+
+Fixed an issue where `n` and `p` (`deadgrep-forward` and
+`deadgrep-backward`) did not work.
 
 # v0.6
 
